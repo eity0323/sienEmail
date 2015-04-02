@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="hello">Hello World, MlActivity!</string>
+    <string name="app_name">Ml</string>
+    <string name="welcome">邮箱Demo</string>
+    <string name="XXXXXXX">Add new email account</string>
+    <string name="detail_set">Incoming server setting</string>
+    <string name="send_email">发送邮件</string>
+    <string name="receivelist">收信箱</string>
+    <string name="mail_details">信件内容</string>
+    <string name="receive_Send">首页</string>
+    <string name="common_loading_tips">正在努力加载...</string>
+
+</resources>

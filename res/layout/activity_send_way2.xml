@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#eeeeee"
+    android:padding="10dp">
+    
+    <EditText 
+        android:id="@+id/send_from"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="312726446@qq.com"
+        android:textColor="@android:color/black"
+        android:hint="收件人"/>
+
+    <EditText 
+        android:id="@+id/send_subject"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:hint="主题"
+        android:textColor="@android:color/black"
+        android:layout_marginTop="10dp"/>
+    
+    <EditText 
+        android:id="@+id/send_content"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:hint="内容"
+        android:textColor="@android:color/black"
+        android:layout_weight="1"
+        android:gravity="top|left"
+        android:singleLine="false"
+        android:layout_marginTop="10dp"/>
+    
+    <LinearLayout 
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button 
+            android:id="@+id/send_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="发送"/>
+        
+        <Button 
+            android:id="@+id/cancel_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="放弃"/>
+    </LinearLayout>
+</LinearLayout>
