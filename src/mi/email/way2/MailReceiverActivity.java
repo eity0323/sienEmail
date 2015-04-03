@@ -1,5 +1,9 @@
 package mi.email.way2;
-
+/**
+ * @version 1.0
+ * @author sien
+ * @description 邮件列表
+ */
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,8 +12,8 @@ import javax.mail.MessagingException;
 import de.greenrobot.event.EventBus;
 import mi.email.way2.adapter.MailAdapter;
 import mi.email.way2.control.MailManager;
-import mi.email.way2.control.MailEvent.loadMailsEvent;
 import mi.email.way2.model.MailDTO;
+import mi.email.way2.tools.MailEvent.loadMailsEvent;
 import mi.email.way2.views.LoadDialog;
 import mi.learn.com.R;
 import android.app.Activity;
@@ -88,7 +92,7 @@ public class MailReceiverActivity extends Activity {
 	 * @throws MessagingException
 	 */
 	private void getAllMail() {
-		MailManager.getInstance().receiveAllMailInThread(this);
+		MailManager.getInstance().loadAllMails(this);
 	}
 
 	public void onEventMainThread(loadMailsEvent event) {

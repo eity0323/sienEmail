@@ -1,21 +1,25 @@
 package mi.email.way2.control;
-
+/**
+ * @version 1.0
+ * @author sien
+ * @description 邮箱管理类
+ */
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.mail.Flags;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-
+import mi.email.way2.api.IMailManager;
 import mi.email.way2.db.DBManager;
 import mi.email.way2.db.MailBeanDao;
+import mi.email.way2.impl.MailReceiveImap;
+import mi.email.way2.impl.MailReceivePop3;
+import mi.email.way2.impl.MailSendSmtp;
 import mi.email.way2.model.MailBean;
 import mi.email.way2.model.MailDTO;
 import android.content.Context;
 import android.text.TextUtils;
 import de.greenrobot.dao.query.QueryBuilder;
 
-public class MailManager {
+public class MailManager implements IMailManager{
 	private static MailManager instance;
 
 	private List<MailDTO> mailBeans;
@@ -24,9 +28,6 @@ public class MailManager {
 	private long lastLoadMailMillSeconds = -1;
 
 	private final String LAST_RECEIVE_MAIL_TIME = "lastReceiveMailMillSeconds";
-	
-	public static int SEND_SIMPLE_MAIL = 1;
-	public static int SEND_COMPLEX_MAIL = 2;
 
 	public static MailManager getInstance() {
 		if (instance == null) {
@@ -34,11 +35,36 @@ public class MailManager {
 		}
 		return instance;
 	}
+	
+	@Override
+	public void loadAllMails(Context context){
+		receiveAllMailInThread(context);
+	}
+	
+	@Override
+	public void loadMailDetail(String messageId){
+		loadMailDetailByMessageIdInThread(messageId);
+	}
+	
+	@Override
+	public void sendMail(MailDTO data) {
+		sendMailInThread(data);
+	}
+
+	@Override
+	public void deleteMail(String messageId) {
+		deleteMailInThread(messageId);
+	}
+
+	@Override
+	public void replyMail(MailDTO data) {
+		replyMailInThread(data);
+	}
 
 	/**
 	 * 收邮件
 	 */
-	public void receiveAllMailInThread(Context context){
+	private void receiveAllMailInThread(Context context){
 		mcontext = context;
 
 		lastLoadMailMillSeconds = -1;
@@ -54,18 +80,52 @@ public class MailManager {
 
 			@Override
 			public void run() {
-				MailReceivePop3.getInstance().receiveAllMails();
+				MailReceivePop3.getInstance().loadMails();
 			}
 		});
 		thread.start();
 	}
 	
-	public void loadMailDetailByMessageIdInThread(final String messageId){
+	private void loadMailDetailByMessageIdInThread(final String messageId){
 		Thread thread = new Thread(new Runnable() {
 
 			@Override
 			public void run() {
-				MailReceivePop3.getInstance().receiveOrReadLocalMailByMessageId(messageId);
+				MailReceivePop3.getInstance().loadMailDetail(messageId);
+			}
+		});
+		thread.start();
+	}
+	
+	private void sendMailInThread(final MailDTO data) {
+		Thread thread = new Thread(new Runnable() {
+
+			@Override
+			public void run() {
+				MailSendSmtp.getInstance().sendMail(data);
+			}
+		});
+		thread.start();
+	}
+
+	private void deleteMailInThread(final String messageId){
+		Thread thread = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+//				MailReceivePop3.getInstance().deleteMailByMessageId(messageId);
+				MailReceiveImap.getInstance().deleteMailByMessageId(messageId);
+			}
+		});
+		thread.start();
+	}
+	
+	private void replyMailInThread(final MailDTO data) {
+		Thread thread = new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				MailSendSmtp.getInstance().replyMail(data);
 			}
 		});
 		thread.start();
@@ -100,41 +160,5 @@ public class MailManager {
 	
 	public List<MailDTO> getMailBeans() {
 		return mailBeans;
-	}
-
-	public void sendMailInThread(final MailBean bean,final int type) {
-		Thread thread = new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				if(type == SEND_SIMPLE_MAIL){
-					MailSendSmtp.getInstance().sendMailSimple(bean);
-				}else{
-					MailSendSmtp.getInstance().sendMailWithAttachment(bean,MailSendSmtp.SEND_PIC_INNER_MODEL);
-				}
-			}
-		});
-		thread.start();
-	}
-
-	public void deleteMailInThread(Message message){
-		try {
-			message.setFlag(Flags.Flag.DELETED, true);
-			message.saveChanges();  
-			
-		} catch (MessagingException e) {
-			e.printStackTrace();
-		}  
-	}
-	
-	public void replyMailInThread(final Message message) {
-		Thread thread = new Thread(new Runnable() {
-			
-			@Override
-			public void run() {
-				MailSendSmtp.getInstance().replyMail(message);
-			}
-		});
-		thread.start();
 	}
 }

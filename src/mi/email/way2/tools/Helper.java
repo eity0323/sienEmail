@@ -1,5 +1,9 @@
-package mi.email.way2.control;
-
+package mi.email.way2.tools;
+/**
+ * @version 1.0
+ * @author sien
+ * @description 工具类
+ */
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;

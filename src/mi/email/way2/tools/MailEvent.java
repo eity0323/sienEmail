@@ -1,4 +1,4 @@
-package mi.email.way2.control;
+package mi.email.way2.tools;
 
 import java.util.List;
 import mi.email.way2.model.MailDTO;
@@ -60,6 +60,52 @@ public class MailEvent {
     	public static int STATUS_FAILED = 1;
   
     	public connectMailServiceEvent(int status,String items)
+    	{
+    		this.items = items;
+    		this.status = status;
+    	}
+    	
+    	public String getDatas(){
+    		return items;
+    	}
+    	
+    	public int getStatus()
+    	{
+    		return status;
+    	}
+	}
+	
+	/*删除邮件*/
+	public static class deleteMailEvent{
+		int status;
+		String items;
+		public static int STATUS_SUCCESS = 0;
+    	public static int STATUS_FAILED = 1;
+  
+    	public deleteMailEvent(int status,String items)
+    	{
+    		this.items = items;
+    		this.status = status;
+    	}
+    	
+    	public String getDatas(){
+    		return items;
+    	}
+    	
+    	public int getStatus()
+    	{
+    		return status;
+    	}
+	}
+	
+	/*回复邮件*/
+	public static class replyMailEvent{
+		int status;
+		String items;
+		public static int STATUS_SUCCESS = 0;
+    	public static int STATUS_FAILED = 1;
+  
+    	public replyMailEvent(int status,String items)
     	{
     		this.items = items;
     		this.status = status;

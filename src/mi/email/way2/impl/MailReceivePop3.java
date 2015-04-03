@@ -1,4 +1,4 @@
-package mi.email.way2.control;
+package mi.email.way2.impl;
 /**
  * @version 1.0
  * @author sien
@@ -27,8 +27,6 @@ import javax.mail.Multipart;
 import javax.mail.Part;
 import javax.mail.Session;
 import javax.mail.Store;
-import javax.mail.event.ConnectionEvent;
-import javax.mail.event.ConnectionListener;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeUtility;
@@ -38,28 +36,43 @@ import javax.mail.search.SearchTerm;
 import javax.mail.search.SentDateTerm;
 
 import android.text.TextUtils;
-import mi.email.way2.control.MailEvent.connectMailServiceEvent;
-import mi.email.way2.control.MailEvent.loadMailsEvent;
-import mi.email.way2.control.MailEvent.searchMailsEvent;
+import mi.email.way2.api.IMailReceive;
+import mi.email.way2.api.MailConfig;
+import mi.email.way2.control.MailManager;
 import mi.email.way2.model.MailBean;
 import mi.email.way2.model.MailDTO;
+import mi.email.way2.tools.Helper;
+import mi.email.way2.tools.MailEvent;
+import mi.email.way2.tools.MailEvent.connectMailServiceEvent;
+import mi.email.way2.tools.MailEvent.deleteMailEvent;
+import mi.email.way2.tools.MailEvent.loadMailsEvent;
+import mi.email.way2.tools.MailEvent.searchMailsEvent;
 import de.greenrobot.event.EventBus;
 
-public class MailReceivePop3 {
+public class MailReceivePop3 implements IMailReceive{
 	private static MailReceivePop3 instance;
 	
-	private Store mailStore;
 	private Folder mailFolder;
 	private Message[] mails;
 	private Message currentMail;
 	private List<MailDTO> mailBeans;
 	
+	private final int OPEN_MODEL_LIST = 0;
+	private final int OPEN_MODEL_DETAIL = 1;
+	private final int OPEN_MODEL_DELETE = 2;
+	private final int OPEN_MODEL_DELIST = 3;
+	
+	private final int EVENT_STATE_LOAD = 0;
+	private final int EVENT_STATE_CONNECT = 1;
+	private final int EVENT_STATE_DELETE = 2;
+	
 	private long lastLoadMailMillSeconds = -1;
 	private String currentEmailFileName;
-	private boolean isLoadByMessageId = false;
 	private String messageId = "";
 	private boolean need2SaveMail = false;
 	private boolean need2ParseMailDetail = false;
+	
+	private String contentStr = "";
 	
 	public static MailReceivePop3 getInstance(){
 		if(instance == null){
@@ -68,28 +81,35 @@ public class MailReceivePop3 {
 		return instance;
 	}
 	
-	public void receiveOrReadLocalMailByMessageId(String messageId){
+	@Override
+	public void loadMails(){
+		connectToServer(OPEN_MODEL_LIST);
+	}
+	
+	@Override
+	public void loadMailDetail(String messageId) {
 		String fileName = MailConfig.emailDir + getInfoBetweenBrackets(messageId) + MailConfig.emailFileSuffix;
 		File _file = new File(fileName);
 		
 		if(_file.exists()){
-			readLocalEmlFile(fileName);
+			readLocalEmlFile(fileName,messageId);
 		}else{
-			receiveMailByMessageId(messageId);
+			receiveOneMail(messageId);
 		}
 	}
-	
-	private void receiveMailByMessageId(String messageId){
-		isLoadByMessageId = true;
-		this.messageId = messageId;
-		
-		need2ParseMailDetail = true;
-		need2SaveMail = true;
-		
-		connectToServer();
+
+	@Override
+	public void deleteMails() {
+		connectToServer(OPEN_MODEL_DELIST);
 	}
 	
-	private void readLocalEmlFile(String fileName){
+	@Override
+	public void deleteMailByMessageId(String messageId){
+		this.messageId = messageId;
+		connectToServer(OPEN_MODEL_DELETE);
+	}
+	
+	private void readLocalEmlFile(String fileName,String messageId){
 		try {
 			InputStream emlfis = new FileInputStream(fileName);
 			Session mailSession = Session.getDefaultInstance(System.getProperties(), null);
@@ -107,73 +127,71 @@ public class MailReceivePop3 {
 			}
 			EventBus.getDefault().post(new MailEvent.searchMailsEvent(searchMailsEvent.STATUS_SUCCESS, messages2MailBeans(mails)));
 			
-			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
+			
+			receiveOneMail(messageId);
 		} catch (MessagingException e) {
 			e.printStackTrace();
+			
+			receiveOneMail(messageId);
 		}
 	}
 
-	public void receiveAllMails(){
-		isLoadByMessageId = false;
-		connectToServer();
-	}
-
-	private void connectToServer() {
-		boolean res = checkAndInitStore();
+	private void receiveOneMail(String messageId){
+		this.messageId = messageId;
 		
-		if(res){
-			connectAndOpenMailBox();
+		need2ParseMailDetail = true;
+		need2SaveMail = true;
+		
+		connectToServer(OPEN_MODEL_DETAIL);
+	}
+	
+	private void connectToServer(int openModel) {
+		Store store = checkAndInitStore();
+		
+		if(store != null){
+			connectAndOpenMailBox(store,openModel);
 		}
 	}
 	
-	private boolean checkAndInitStore(){
-		boolean res = true;
-		if(mailStore != null)	return res;
-		
+	private Store checkAndInitStore(){
 		Session session = Session.getInstance(getPopProperties(), getAuthenticator());
 		try {
-			mailStore = session.getStore(MailConfig.hostProtocolPop3);
-			mailStore.addConnectionListener(mailConnectionListener);
+			Store mailStore = session.getStore(MailConfig.hostProtocolPop3);
+			
+			return mailStore;
+		} catch (Exception e) {
+			e.printStackTrace();
+			connectMailFailed("邮箱协议错误",EVENT_STATE_CONNECT);
+		}
+		return null;
+	}
+	
+	private void connectAndOpenMailBox(Store store ,int openModel){
+		try {
+			store.connect();
+			
+			mailFolder = store.getFolder("INBOX");
+			mailFolder.open(Folder.READ_WRITE);
+			
+			loadMailFromMailBox(store,openModel);
 			
 		} catch (Exception e) {
-			res = false;
-			
-			connectMailFailed();
-		}
-		return res;
-	}
-	
-	private void connectAndOpenMailBox(){
-		boolean res = connect();
-		if(res){
-			openInBoxFolder();
-		}
-	}
-	
-	private boolean connect(){
-		boolean res = false;
-		try {
-			mailStore.connect();
-			res = true;
-			
-		} catch (MessagingException e) {
-			res = false;
-			
-			connectMailFailed();
 			e.printStackTrace();
+			connectMailFailed("打开收件箱失败！",EVENT_STATE_CONNECT);
 		}
-		
-		return res;
-	}
-
-	private void connectMailFailed() {
-		connectMailFailed("连接服务器失败！");
 	}
 	
-	private void connectMailFailed(String msg) {
-		EventBus.getDefault().post(new MailEvent.connectMailServiceEvent(connectMailServiceEvent.STATUS_FAILED, msg));
+	private void connectMailFailed(String msg,int eventype) {
+		if(eventype == EVENT_STATE_CONNECT){
+			EventBus.getDefault().post(new MailEvent.connectMailServiceEvent(connectMailServiceEvent.STATUS_FAILED, msg));
+		}else if(eventype == EVENT_STATE_LOAD){
+			EventBus.getDefault().post(new MailEvent.loadMailsEvent(loadMailsEvent.STATUS_FAILED, null));
+			EventBus.getDefault().post(new MailEvent.searchMailsEvent(searchMailsEvent.STATUS_FAILED, null));
+		}else if(eventype == EVENT_STATE_DELETE){
+			EventBus.getDefault().post(new MailEvent.deleteMailEvent(deleteMailEvent.STATUS_FAILED, msg));
+		}
 	}
 
 	private MailAuthenticator getAuthenticator(){
@@ -187,63 +205,32 @@ public class MailReceivePop3 {
 		p.put("mail.pop3.port", MailConfig.hostPortPop3);
 		return p;
 	}
-	
-	private ConnectionListener mailConnectionListener = new ConnectionListener() {
 
-		@Override
-		public void opened(ConnectionEvent arg0) {
-			System.out.println("mailConnectionListener----------------------------open");
-			loadMailFromMailBox();
-		}
-
-		@Override
-		public void disconnected(ConnectionEvent arg0) {
-			System.out.println("mailConnectionListener----------------------------disconnected");
-		}
-
-		@Override
-		public void closed(ConnectionEvent arg0) {
-			System.out.println("mailConnectionListener----------------------------closed");
-		}
-	};
-	
-	private boolean openInBoxFolder() {
-		boolean res = false;
-		try {
-			mailFolder = mailStore.getFolder("INBOX");
-			mailFolder.open(Folder.READ_WRITE);
-			
-			res = true;
-		} catch (MessagingException e) {
-			
-			e.printStackTrace();
-			connectMailFailed("打开收件箱失败！");
-		}
-		return res;
-	}
-
-	private boolean closeConnection() {
+	private boolean closeConnection(Store store) {
 		try {
 			if (mailFolder != null && mailFolder.isOpen()) {
 				mailFolder.close(true);
 			}
-			mailStore.close();
+			store.close();
 			return true;
 		} catch (Exception e) {
-			
 			e.printStackTrace();
 		}
 		return false;
 	}
 
-	private void loadMailFromMailBox(){
-		if(isLoadByMessageId)
-			getMailDetailByMessageId();
-		else
-			getAllOrLastestMailList();
+	private void loadMailFromMailBox(Store store, int openModel){
+		if(openModel == OPEN_MODEL_DETAIL)
+			getMailDetailByMessageId(store);
+		else if(openModel == OPEN_MODEL_LIST)
+			getAllOrLastestMailList(store);
+		else if(openModel == OPEN_MODEL_DELETE)
+			deleteMailByMessageId(store);
+		else if(openModel == OPEN_MODEL_DELIST)
+			deleteMails(store);
 	}
 	
-	private void getMailDetailByMessageId(){
+	private void getMailDetailByMessageId(Store store){
 		getMailByMessageId(messageId);
 		
 		if(mails != null){
@@ -251,10 +238,10 @@ public class MailReceivePop3 {
 			saveAndParseDetailMessage(currentMail);
 		}
 		EventBus.getDefault().post(new MailEvent.searchMailsEvent(searchMailsEvent.STATUS_SUCCESS, messages2MailBeans(mails)));
-		closeConnection();
+		closeConnection(store);
 	}
 	
-	private void getAllOrLastestMailList() {
+	private void getAllOrLastestMailList(Store store) {
 		if (lastLoadMailMillSeconds == -1) {
 			getAllMailist();
 		} else {
@@ -267,7 +254,28 @@ public class MailReceivePop3 {
 			
 			EventBus.getDefault().post(new MailEvent.loadMailsEvent(loadMailsEvent.STATUS_SUCCESS, mailBeans));
 		}
-		closeConnection();
+		closeConnection(store);
+	}
+	
+	private void deleteMailByMessageId(Store store){
+		try{
+			getMailByMessageId(messageId);
+			
+			if(mails != null){
+				Message message = mails[0];
+				message.setFlag(Flags.Flag.DELETED, true);
+				message.saveChanges();
+			}
+		}catch(Exception ex){
+			ex.printStackTrace();
+			connectMailFailed("邮件删除失败",EVENT_STATE_DELETE);
+		}
+		
+		closeConnection(store);
+	}
+	
+	private void deleteMails(Store store){
+		
 	}
 	
 	private void getMailByMessageId(String messageId){
@@ -278,7 +286,7 @@ public class MailReceivePop3 {
 			}
 		}catch(Exception ex){
 			ex.printStackTrace();
-			connectMailFailed("邮件解析错误！");
+			connectMailFailed("邮件加载错误！",EVENT_STATE_LOAD);
 		}
 	}
 	
@@ -295,6 +303,7 @@ public class MailReceivePop3 {
 			mails = mailFolder.search(st);
 		}catch(Exception ex){
 			ex.printStackTrace();
+			connectMailFailed("邮件加载错误！",EVENT_STATE_LOAD);
 		}
 	}
 	
@@ -303,6 +312,7 @@ public class MailReceivePop3 {
 			mails = mailFolder.getMessages();
 		}catch(Exception ex){
 			ex.printStackTrace();
+			connectMailFailed("邮件加载错误！",EVENT_STATE_LOAD);
 		}
 	}
 	
@@ -329,6 +339,8 @@ public class MailReceivePop3 {
 			}
 		}catch(Exception ex){
 			ex.printStackTrace();
+			
+			connectMailFailed("邮件解析错误！",EVENT_STATE_LOAD);
 		}
 	}
 
@@ -513,8 +525,16 @@ public class MailReceivePop3 {
 		return ((MimeMessage) mimeMessage).getMessageID();
 	}
 	
-	private String getContent(){
-		return "";
+	private String getContent(Part part){
+		String str = "";
+		try {
+			str = part.getContent().toString();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (MessagingException e) {
+			e.printStackTrace();
+		}
+		return str;
 	}
 
 	/**
@@ -575,7 +595,7 @@ public class MailReceivePop3 {
 		}
 		
 		if(need2ParseMailDetail){
-			parseMessage(message);
+			parseMessageDetail(message);
 		}
 	}
 
@@ -620,7 +640,7 @@ public class MailReceivePop3 {
 	/*
 	 * 解析邮件
 	 */
-	private void parseMessage(Message message){
+	private void parseMessageDetail(Message message){
 		try{
 			Object content = message.getContent();
 			if (content instanceof Multipart) {
@@ -655,9 +675,21 @@ public class MailReceivePop3 {
 		if (disposition == null) {
 			if ((contentType.length() >= 10) && (contentType.toLowerCase().substring(0, 10).equals("text/plain"))) {
 				fileNameWidthExtension = MailConfig.attachmentDir + currentEmailFileName + ".txt";
+				
+				String constr = getContent(part);
+				if(!TextUtils.isEmpty(constr)){
+					contentStr = constr;
+				}
+				
+				System.out.println("print mail plain -------------------" + constr);
 			} else if ((contentType.length() >= 9) // Check if html
 					&& (contentType.toLowerCase().substring(0, 9).equals("text/html"))) {
 				fileNameWidthExtension = MailConfig.attachmentDir + currentEmailFileName + ".html";
+				
+				String constr = getContent(part);
+				if(!TextUtils.isEmpty(constr)){
+					contentStr = constr;
+				}
 			} else if ((contentType.length() >= 9) // Check if html
 					&& (contentType.toLowerCase().substring(0, 9).equals("image/gif"))) {
 				fileNameWidthExtension = MailConfig.attachmentDir + currentEmailFileName + ".gif";
@@ -745,11 +777,10 @@ public class MailReceivePop3 {
 				}
 			}
 		}
-		
 		return list;
 	}
 	
-	private MailDTO message2MailDTO(Message message){
+	public MailDTO message2MailDTO(Message message){
 		try{
 			String from = getFrom(message);
 			String messageId = getMessageId(message);
@@ -793,6 +824,8 @@ public class MailReceivePop3 {
 			
 		}catch(Exception ex){
 			ex.printStackTrace();
+			
+			connectMailFailed("邮件解析错误！",EVENT_STATE_LOAD);
 		}
 		return null;
 	}

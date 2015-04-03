@@ -1,7 +1,13 @@
-package mi.email.way2.control;
-
+package mi.email.way2.impl;
+/**
+ * @version 1.0
+ * @author sien
+ * @description 用户认证
+ */
 import javax.mail.Authenticator;
 import javax.mail.PasswordAuthentication;
+
+import mi.email.way2.api.MailConfig;
 
 public class MailAuthenticator extends Authenticator {
 	private String username;

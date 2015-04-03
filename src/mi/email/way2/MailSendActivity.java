@@ -1,18 +1,23 @@
 package mi.email.way2;
-
-import java.util.List;
+/**
+ * @version 1.0
+ * @author sien
+ * @description 发送or回复页面
+ */
+import java.util.HashMap;
 
 import javax.mail.Message;
 
 import de.greenrobot.event.EventBus;
-import mi.email.way2.control.MailConfig;
-import mi.email.way2.control.MailEvent.loadMailsEvent;
+import mi.email.way2.api.MailConfig;
 import mi.email.way2.control.MailManager;
+import mi.email.way2.impl.MailReceivePop3;
 import mi.email.way2.model.MailBean;
 import mi.email.way2.model.MailDTO;
 import mi.learn.com.R;
 import android.app.Activity;
 import android.os.Bundle;
+import android.os.Environment;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -22,6 +27,9 @@ import android.widget.Toast;
 public class MailSendActivity extends Activity implements OnClickListener{
 	EditText fromET,subjectET,contentET;
 	
+	private boolean isReply = false;
+	private Message curMessage = null;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -29,6 +37,8 @@ public class MailSendActivity extends Activity implements OnClickListener{
 		setContentView(R.layout.activity_send_way2);
 		
 		EventBus.getDefault().register(this);
+		
+		isReply = false;
 		
 		initLayout();
 		
@@ -54,7 +64,7 @@ public class MailSendActivity extends Activity implements OnClickListener{
 	public void onClick(View v) {
 		switch(v.getId()){
 		case R.id.send_btn:
-			checkAndSend();
+			sendOrReply();
 			break;
 		case R.id.cancel_btn:
 			cancel();
@@ -66,18 +76,17 @@ public class MailSendActivity extends Activity implements OnClickListener{
 	
 	public void onEventMainThread(Message message){
 		if(message != null){
-			MailManager.getInstance().replyMailInThread(message);
-		}
-	}
-	
-	public void onEventMainThread(loadMailsEvent event){
-		if(event != null){
-			List<MailDTO> messages = event.getDatas();
-			if(messages.size() <= 0)	return;
 			
-			MailDTO mitem = messages.get(0);
+			isReply = true;
+			curMessage = message;
+			
+			MailDTO mitem = MailReceivePop3.getInstance().message2MailDTO(message);
+			if(mitem == null){
+				finish();
+				return;
+			}
+			
 			MailBean mbean = mitem.mailBean;
-			
 			if(mbean != null){
 				subjectET.setText("Re: " + mbean.getSubject());
 				
@@ -90,6 +99,34 @@ public class MailSendActivity extends Activity implements OnClickListener{
 				String fromstr = "收件人："+ toUname;
 				fromET.setText(fromstr);
 			}
+		}
+	}
+	
+	private void sendOrReply(){
+		if(isReply){
+			checkAndReply();
+		}else{
+			checkAndSend();
+		}
+	}
+	
+	private void checkAndReply(){
+		if(curMessage != null){
+			String content = contentET.getText().toString();
+			
+			if(TextUtils.isEmpty(content)){
+				content = "";
+			}
+			
+			MailBean bean = new MailBean();
+			bean.setContent(content);
+			
+			MailDTO data = new MailDTO();
+			data.mailBean = bean;
+			data.mailMessage = curMessage;
+			MailManager.getInstance().replyMail(data);
+			
+			cancel();
 		}
 	}
 	
@@ -113,18 +150,30 @@ public class MailSendActivity extends Activity implements OnClickListener{
 			content = "";
 		}
 		
+		MailDTO data = new MailDTO();
+		
 		MailBean bean = new MailBean();
 		bean.setFrom(MailConfig.userName);
 		bean.setToAddress(from);
 		bean.setSubject(subject);
 		bean.setContent(content);
-		send(bean);
 		
-		finish();
+		String filepath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/log_raiyi.txt";
+		String picpath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/aa.jpg";
+		HashMap<String, String> map = new HashMap<String, String>();
+		map.put("file1", filepath);
+		map.put("pic1", picpath);
+		
+		data.attachmentMap = map;
+		data.mailBean = bean;
+		
+		send(data);
+		
+		cancel();
 	}
 	
-	private void send(MailBean bean){
-		MailManager.getInstance().sendMailInThread(bean, MailManager.SEND_SIMPLE_MAIL);
+	private void send(MailDTO data){
+		MailManager.getInstance().sendMail(data);
 	}
 	
 	private void cancel(){

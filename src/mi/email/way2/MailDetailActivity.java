@@ -1,17 +1,19 @@
 package mi.email.way2;
-
+/**
+ * @version 1.0
+ * @author sien
+ * @description 邮件详情页面
+ */
 import java.util.Date;
 import java.util.List;
 
 import javax.mail.Message;
 
 import de.greenrobot.event.EventBus;
-import mi.email.way2.control.MailConfig;
-import mi.email.way2.control.MailEvent.searchMailsEvent;
 import mi.email.way2.control.MailManager;
-import mi.email.way2.control.MailSendSmtp;
 import mi.email.way2.model.MailBean;
 import mi.email.way2.model.MailDTO;
+import mi.email.way2.tools.MailEvent.searchMailsEvent;
 import mi.learn.com.R;
 import android.app.Activity;
 import android.content.Intent;
@@ -26,6 +28,9 @@ public class MailDetailActivity extends Activity implements OnClickListener{
 	private String toAddress = "";
 	String mailId = "";
 	private Message currentMessage;
+	
+	final String mimetype = "text/html";  
+    final String encoding = "gbk";  
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +62,7 @@ public class MailDetailActivity extends Activity implements OnClickListener{
 	}
 	
 	private void loadMailDetail(){
-		MailManager.getInstance().loadMailDetailByMessageIdInThread(mailId);
+		MailManager.getInstance().loadMailDetail(mailId);
 	}
 	
 	public void onEventMainThread(searchMailsEvent event){
@@ -68,7 +73,7 @@ public class MailDetailActivity extends Activity implements OnClickListener{
 			TextView subjectTV = (TextView)findViewById(R.id.subject_mail);
 			TextView sendtimeTV = (TextView)findViewById(R.id.senddate_mail);
 			TextView fromTV = (TextView)findViewById(R.id.from_mail);
-			WebView content = (WebView)findViewById(R.id.content_mail);
+			WebView contentWV = (WebView)findViewById(R.id.content_mail);
 			
 			MailDTO mitem = messages.get(0);
 			MailBean mbean = mitem.mailBean;
@@ -92,6 +97,10 @@ public class MailDetailActivity extends Activity implements OnClickListener{
 				}
 				String fromstr = "收件人："+ toUname;
 				fromTV.setText(fromstr);
+				
+				String content = mbean.getContent();
+				if(!TextUtils.isEmpty(content))
+					contentWV.loadDataWithBaseURL(null, content, mimetype, encoding, null);
 			}
 		}
 	}
@@ -103,7 +112,7 @@ public class MailDetailActivity extends Activity implements OnClickListener{
 			replyMail();
 			break;
 		case R.id.del_mail:
-			
+			deleteMail();
 			break;
 		}
 	}
@@ -115,6 +124,12 @@ public class MailDetailActivity extends Activity implements OnClickListener{
 		t.setClass(getApplicationContext(), MailSendActivity.class);
 		t.putExtra("model", "reply");
 		startActivity(t);
+	}
+	
+	private void deleteMail(){
+		if( !TextUtils.isEmpty(mailId) ){
+			MailManager.getInstance().deleteMail(mailId);
+		}
 	}
 	
 	public void onEventMainThread(String value){

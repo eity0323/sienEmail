@@ -1,4 +1,4 @@
-package mi.email.way2.control;
+package mi.email.way2.impl;
 /**
  * @version 1.0
  * @author sien
@@ -6,6 +6,8 @@ package mi.email.way2.control;
  */
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -22,11 +24,15 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import mi.email.way2.api.IMailSend;
+import mi.email.way2.api.MailConfig;
 import mi.email.way2.model.MailBean;
+import mi.email.way2.model.MailDTO;
 import android.os.Environment;
 
-public class MailSendSmtp {
+public class MailSendSmtp implements IMailSend{
 	private static MailSendSmtp instance;
+	
 	public static int SEND_PIC_INNER_MODEL = 1;
 	public static int SEND_PIC_ATTACH_MODEL = 2;
 	
@@ -37,18 +43,37 @@ public class MailSendSmtp {
 		return instance;
 	}
 	
+	@Override
+	public void sendMail(MailDTO data) {
+		if(data.attachmentMap != null){
+			sendMailWithAttachment(data, SEND_PIC_ATTACH_MODEL);
+		}else{
+			sendMailSimple(data);
+		}
+	}
+	@Override
+	public void replyMail(MailDTO data){
+		if(data.attachmentMap != null){
+			replyWithAttachPic(data);
+		}else{
+			replySimple(data);
+		}
+	}
+	
 	private Properties getSmtpProperties(boolean needAuth) {
 		Properties p = new Properties();
 		p.put("mail.smtp.host", MailConfig.hostServiceSmtp);
 		p.put("mail.smtp.port",MailConfig.hostPortSmtp);
 		p.put("mail.transport.protocol", MailConfig.hostProtocolSmtp);
 		
-		if(needAuth)
+		if(needAuth){
 			p.put("mail.smtp.auth","true");//设置验证机制
+		}
 		return p;
 	}
 
-	public void sendMailSimple(MailBean bean) {
+	private void sendMailSimple(MailDTO data) {
+		MailBean bean = data.mailBean;
 		try {
 			Session session = Session.getInstance(getSmtpProperties(false));
 			Message message = mailBean2Message(session,bean);
@@ -65,7 +90,7 @@ public class MailSendSmtp {
 		}
 	}
 	
-	public void sendMailWithAttachment(MailBean bean,int sendModel){
+	private void sendMailWithAttachment(MailDTO data,int sendModel){
 		try{
 			MailAuthenticator authenticator = new MailAuthenticator(MailConfig.userName, MailConfig.password);
 			Session session = Session.getInstance(getSmtpProperties(true),authenticator);
@@ -73,11 +98,12 @@ public class MailSendSmtp {
 			
 			Message message = null;
 			if(sendModel == SEND_PIC_ATTACH_MODEL)
-				message = mailBean2MessageWithAttachment(session,bean);
+				message = mailBean2MessageWithAttachment(session,data);
 			else
-				message = mailBean2MessageWithInnerAttach(session, bean);
+				message = mailBean2MessageWithInnerAttach(session, data);
 			
-			Transport.send(message);
+			if(message != null)
+				Transport.send(message);
 			
 		}catch(Exception ex){
 			ex.printStackTrace();
@@ -100,7 +126,8 @@ public class MailSendSmtp {
 		return null;
 	}
 	
-	private Message mailBean2MessageWithAttachment(Session session, MailBean bean){
+	private Message mailBean2MessageWithAttachment(Session session, MailDTO data){
+		MailBean bean = data.mailBean;
 		try{
 			Message message = new MimeMessage(session);
 			message.setFrom(new InternetAddress(MailConfig.userName));
@@ -110,7 +137,7 @@ public class MailSendSmtp {
 			String filepath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/log_raiyi.txt";
 			String picpath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/aa.jpg";
 			MimeBodyPart bodyPartAttch = createAttachMent(filepath);//附件
-			MimeBodyPart bodyPartContentAndPic = createContentAndAttachPic("hello world",picpath);//文本内容
+			MimeBodyPart bodyPartContentAndPic = createContentAndAttachPic(bean.getContent(),picpath);//文本内容
 			MimeMultipart mimeMuti = new MimeMultipart("mixed");
 			mimeMuti.addBodyPart(bodyPartAttch);
 			mimeMuti.addBodyPart(bodyPartContentAndPic);
@@ -126,7 +153,8 @@ public class MailSendSmtp {
 		return null;
 	}
 	
-	private Message mailBean2MessageWithInnerAttach(Session session, MailBean bean){
+	private Message mailBean2MessageWithInnerAttach(Session session, MailDTO data){
+		MailBean bean = data.mailBean;
 		try{
 			Message message = new MimeMessage(session);
 			message.setFrom(new InternetAddress(MailConfig.userName));
@@ -136,7 +164,7 @@ public class MailSendSmtp {
 			String filepath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/log_raiyi.txt";
 			String picpath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/aa.jpg";
 			MimeBodyPart bodyPartAttch = createAttachMent(filepath);//附件
-			MimeBodyPart bodyPartContentAndPic = createContentAndInnerPic("hello world",picpath);
+			MimeBodyPart bodyPartContentAndPic = createContentAndInnerPic(bean.getContent(),picpath);
 			
 			MimeMultipart mimeMuti = new MimeMultipart("mixed");
 			mimeMuti.addBodyPart(bodyPartAttch);
@@ -182,7 +210,7 @@ public class MailSendSmtp {
 	}
 	
 	//创建文本和内嵌图片
-	public MimeBodyPart createContentAndInnerPic(String content,String path) throws MessagingException, UnsupportedEncodingException{
+	private MimeBodyPart createContentAndInnerPic(String content,String path) throws MessagingException, UnsupportedEncodingException{
 	    // 创建一个MIME子类型为“related”的MimeMultipart对象  
         MimeMultipart mp = new MimeMultipart("related");  
         // 创建一个表示正文的MimeBodyPart对象，并将它加入到前面创建的MimeMultipart对象中  
@@ -216,55 +244,23 @@ public class MailSendSmtp {
 		return UUID.randomUUID().toString();
 	}
 	
-	public void replyMail(Message message){
-//		try {
-//	         InternetAddress address;     
-//             address = (InternetAddress)message.getFrom()[0];     
-//             if(address != null) {     
-//                 System.out.println(address.getPersonal());     
-//             }   
-//             if (null != address) {     
-//                 MimeMessage replyMessage = (MimeMessage) message.reply(false);     
-//                 replyMessage.setFrom(new InternetAddress(MailConfig.userName));  
-//                 replyMessage.setRecipients(MimeMessage.RecipientType.TO, address.getAddress());  
-//                 replyMessage.setText("这是回复邮件，不知道能否成功！");    
-//                 
-////                 String filepath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/log_raiyi.txt";
-////     			 String picpath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/aa.jpg";
-////     			 MimeBodyPart bodyPartAttch = createAttachMent(filepath);//附件
-////     			 MimeBodyPart bodyPartContentAndPic = createContentAndInnerPic("hello world",picpath);
-////     			
-////     			 MimeMultipart mimeMuti = new MimeMultipart("mixed");
-////     			 mimeMuti.addBodyPart(bodyPartAttch);
-////     			 mimeMuti.addBodyPart(bodyPartContentAndPic);
-////     			replyMessage.setContent(mimeMuti);
-//     			
-//                 replyMessage.saveChanges();  
-//                 
-//                 Session session = Session.getInstance(getSmtpProperties(true));
-//                 Transport tran = session.getTransport(MailConfig.hostProtocolSmtp);
-//     			 tran.connect(MailConfig.hostServiceSmtp, MailConfig.hostPortSmtp, MailConfig.userName, MailConfig.password);// 连接到新浪邮箱服务器
-//     			Transport.send(replyMessage, new Address[] { new InternetAddress(address.getAddress()) });
-//             }     
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}    
-		
-		replySimple(message);
-	}
-	
-	private void replySimple(Message message) {
+	private void replySimple(MailDTO data) {
 		try {
+			Message message = data.mailMessage;
+			if(message == null)		return;
+			
 			InternetAddress address;
 			address = (InternetAddress) message.getFrom()[0];
 			if (address != null) {
 				System.out.println(address.getPersonal());
 			}
 			if (null != address) {
+				MailBean bean = data.mailBean;
+				
 				MimeMessage replyMessage = (MimeMessage) message.reply(false);
 				replyMessage.setFrom(new InternetAddress(MailConfig.userName));
 				replyMessage.setRecipients(MimeMessage.RecipientType.TO, address.getAddress());
-				replyMessage.setText("这是回复邮件，不知道能否成功！");
+				replyMessage.setText(bean.getContent());
 				replyMessage.saveChanges();
 
 				Session session = Session.getInstance(getSmtpProperties(true));
@@ -278,8 +274,11 @@ public class MailSendSmtp {
 		}
 	}
 	
-	private void replyWithAttachPic(Message message) {
+	private void replyWithAttachPic(MailDTO data) {
 		try {
+			Message message = data.mailMessage;
+			if(message == null)		return;
+			
 			InternetAddress address;
 			address = (InternetAddress) message.getFrom()[0];
 			if (address != null) {
@@ -290,14 +289,22 @@ public class MailSendSmtp {
 				replyMessage.setFrom(new InternetAddress(MailConfig.userName));
 				replyMessage.setRecipients(MimeMessage.RecipientType.TO, address.getAddress());
 
-				String filepath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/log_raiyi.txt";
-				String picpath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/aa.jpg";
-				MimeBodyPart bodyPartAttch = createAttachMent(filepath);// 附件
-				MimeBodyPart bodyPartContentAndPic = createContentAndAttachPic("hello world", picpath);
-
+				MailBean bean = data.mailBean;
+				HashMap<String, String> _map = data.attachmentMap;
+				String key,value;
 				MimeMultipart mimeMuti = new MimeMultipart("mixed");
-				mimeMuti.addBodyPart(bodyPartAttch);
-				mimeMuti.addBodyPart(bodyPartContentAndPic);
+				for (Entry<String, String> entry:_map.entrySet()) {
+					key = entry.getKey();
+					value = entry.getValue();
+					
+					if(key.contains("file")){
+						MimeBodyPart bodyPartAttch = createAttachMent(value);// 附件
+						mimeMuti.addBodyPart(bodyPartAttch);
+					}else if(key.contains("pic")){
+						MimeBodyPart bodyPartContentAndPic = createContentAndAttachPic(bean.getContent(), value);
+						mimeMuti.addBodyPart(bodyPartContentAndPic);
+					}
+				}
 				replyMessage.setContent(mimeMuti);
 
 				replyMessage.saveChanges();
@@ -312,4 +319,5 @@ public class MailSendSmtp {
 			e.printStackTrace();
 		}
 	}
+
 }

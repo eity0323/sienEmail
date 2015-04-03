@@ -1,4 +1,4 @@
-package mi.email.way2.control;
+package mi.email.way2.api;
 
 import java.io.File;
 
@@ -12,6 +12,10 @@ public class MailConfig {
 	public static String hostServicePop3 = "mail.suneee.com";//;//"pop3.suneee.com";
 	public static String hostProtocolPop3 = "pop3";
 	public static int hostPortPop3 = 110;
+	
+	public static String hostServiceImap = "mail.suneee.com";//;//"imap.suneee.com";
+	public static String hostProtocolImap = "imap";
+	public static int hostPortImap = 143;
 	
 	public static String userName = "sien@suneee.com";
 	public static String password = "eity0323";
