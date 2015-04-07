@@ -7,11 +7,14 @@ package mi.email.way2.control;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.mail.Message;
+
 import mi.email.way2.api.IMailManager;
+import mi.email.way2.api.IMailReceive;
+import mi.email.way2.api.IMailSend;
 import mi.email.way2.db.DBManager;
 import mi.email.way2.db.MailBeanDao;
 import mi.email.way2.impl.MailReceiveImap;
-import mi.email.way2.impl.MailReceivePop3;
 import mi.email.way2.impl.MailSendSmtp;
 import mi.email.way2.model.MailBean;
 import mi.email.way2.model.MailDTO;
@@ -21,6 +24,9 @@ import de.greenrobot.dao.query.QueryBuilder;
 
 public class MailManager implements IMailManager{
 	private static MailManager instance;
+	
+	private IMailSend sendInstance; 
+	private IMailReceive receiveInstance;
 
 	private List<MailDTO> mailBeans;
 	private Context mcontext;
@@ -60,7 +66,28 @@ public class MailManager implements IMailManager{
 	public void replyMail(MailDTO data) {
 		replyMailInThread(data);
 	}
-
+	
+	public MailDTO message2MailDTO(Message message){
+		MailDTO mitem = getReceiveInstance().message2MailDTO(message);
+		return mitem;
+	}
+	
+	private IMailSend getSendInstance(){
+		if(sendInstance == null){
+			sendInstance = new MailSendSmtp();
+		}
+		
+		return sendInstance;
+	}
+	
+	private IMailReceive getReceiveInstance(){
+		if(receiveInstance == null){
+			receiveInstance = new MailReceiveImap();
+		}
+		
+		return receiveInstance;
+	}
+	
 	/**
 	 * 收邮件
 	 */
@@ -74,13 +101,13 @@ public class MailManager implements IMailManager{
 			lastLoadMailMillSeconds = Long.valueOf(secondstr);
 		}
 		
-		MailReceivePop3.getInstance().setLastLoadMailMillSeconds(lastLoadMailMillSeconds);
+		getReceiveInstance().setLastLoadMailMillSeconds(lastLoadMailMillSeconds);
 		
 		Thread thread = new Thread(new Runnable() {
 
 			@Override
 			public void run() {
-				MailReceivePop3.getInstance().loadMails();
+				getReceiveInstance().loadMails();
 			}
 		});
 		thread.start();
@@ -91,7 +118,7 @@ public class MailManager implements IMailManager{
 
 			@Override
 			public void run() {
-				MailReceivePop3.getInstance().loadMailDetail(messageId);
+				getReceiveInstance().loadMailDetail(messageId);
 			}
 		});
 		thread.start();
@@ -102,7 +129,7 @@ public class MailManager implements IMailManager{
 
 			@Override
 			public void run() {
-				MailSendSmtp.getInstance().sendMail(data);
+				getSendInstance().sendMail(data);
 			}
 		});
 		thread.start();
@@ -113,8 +140,7 @@ public class MailManager implements IMailManager{
 			
 			@Override
 			public void run() {
-//				MailReceivePop3.getInstance().deleteMailByMessageId(messageId);
-				MailReceiveImap.getInstance().deleteMailByMessageId(messageId);
+				getReceiveInstance().deleteMailByMessageId(messageId);
 			}
 		});
 		thread.start();
@@ -125,7 +151,7 @@ public class MailManager implements IMailManager{
 			
 			@Override
 			public void run() {
-				MailSendSmtp.getInstance().replyMail(data);
+				getSendInstance().replyMail(data);
 			}
 		});
 		thread.start();

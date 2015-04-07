@@ -9,9 +9,9 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Locale;
 import java.util.Set;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -25,14 +25,11 @@ import android.text.TextUtils;
  * @date 2014-3-5
  * 
  **/
-@SuppressLint({ "SdCardPath", "DefaultLocale" })
 public class PreferencesManager {
-
-	private final String tag = PreferencesManager.class.getSimpleName();
 
 	private Context mContext;
 	private SharedPreferences preferences;
-	private String DATA_URL = "/data/data/";  
+	private String DATA_URL = "";  
 	private String SHARED_PREFS = "/shared_prefs";  
 	
 	private static String shareName = "SHARE_DATA";
@@ -165,7 +162,7 @@ public class PreferencesManager {
 					methodName = method.getName();
 					for (Field f : fields) {
 						fieldName = f.getName();
-						if (methodName.toLowerCase().contains(fieldName.toLowerCase())) {
+						if (methodName.toLowerCase(Locale.getDefault()).contains(fieldName.toLowerCase())) {
 
 							Object value = method.invoke(t);
 							if (value != null && !TextUtils.isEmpty(String.valueOf(value))) {
@@ -264,6 +261,7 @@ public class PreferencesManager {
 	public void clearAll() {
 		try {
 			String fileName = shareName+".xml";
+			DATA_URL = mContext.getFilesDir().getPath();//  /data/data/
 			StringBuilder path = new StringBuilder(DATA_URL).append(mContext.getPackageName()).append(SHARED_PREFS);
 			File file = new File(path.toString(), fileName);
 			if (file.exists()) {

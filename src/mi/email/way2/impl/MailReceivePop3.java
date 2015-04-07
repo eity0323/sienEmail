@@ -16,6 +16,7 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 
 import javax.mail.BodyPart;
@@ -50,8 +51,6 @@ import mi.email.way2.tools.MailEvent.searchMailsEvent;
 import de.greenrobot.event.EventBus;
 
 public class MailReceivePop3 implements IMailReceive{
-	private static MailReceivePop3 instance;
-	
 	private Folder mailFolder;
 	private Message[] mails;
 	private Message currentMail;
@@ -74,11 +73,16 @@ public class MailReceivePop3 implements IMailReceive{
 	
 	private String contentStr = "";
 	
-	public static MailReceivePop3 getInstance(){
-		if(instance == null){
-			instance = new MailReceivePop3();
-		}
-		return instance;
+	private String mailAccount,mailPwd;
+	
+	public MailReceivePop3(){
+		this.mailAccount = MailConfig.userName;
+		this.mailPwd = MailConfig.password;
+	}
+	
+	public MailReceivePop3(String uname,String upwd){
+		this.mailAccount = uname;
+		this.mailPwd = upwd;
 	}
 	
 	@Override
@@ -108,6 +112,8 @@ public class MailReceivePop3 implements IMailReceive{
 		this.messageId = messageId;
 		connectToServer(OPEN_MODEL_DELETE);
 	}
+	
+	
 	
 	private void readLocalEmlFile(String fileName,String messageId){
 		try {
@@ -195,7 +201,7 @@ public class MailReceivePop3 implements IMailReceive{
 	}
 
 	private MailAuthenticator getAuthenticator(){
-		MailAuthenticator authenticator = new MailAuthenticator();
+		MailAuthenticator authenticator = new MailAuthenticator(mailAccount,mailPwd);
 		return authenticator;
 	}
 	
@@ -382,7 +388,7 @@ public class MailReceivePop3 implements IMailReceive{
 	 */
 	private String getMailAddress(String type, Message mimeMessage) throws Exception {
 		String mailaddr = "";
-		String addtype = type.toUpperCase();
+		String addtype = type.toUpperCase(Locale.getDefault());
 		InternetAddress[] address = null;
 		if (addtype.equals("TO") || addtype.equals("CC") || addtype.equals("BCC")) {
 			if (addtype.equals("TO")) {
@@ -572,10 +578,10 @@ public class MailReceivePop3 implements IMailReceive{
 					attachflag = isContainAttach((Part) bodyPart);
 				} else {
 					String contype = bodyPart.getContentType();
-					if (contype.toLowerCase().indexOf("application") != -1) {
+					if (contype.toLowerCase(Locale.getDefault()).indexOf("application") != -1) {
 						attachflag = true;
 					}
-					if (contype.toLowerCase().indexOf("name") != -1) {
+					if (contype.toLowerCase(Locale.getDefault()).indexOf("name") != -1) {
 						attachflag = true;
 					}
 				}
@@ -673,7 +679,7 @@ public class MailReceivePop3 implements IMailReceive{
 		InputStreamReader sbis = new InputStreamReader(part.getInputStream());
 		// 没有附件的情况
 		if (disposition == null) {
-			if ((contentType.length() >= 10) && (contentType.toLowerCase().substring(0, 10).equals("text/plain"))) {
+			if ((contentType.length() >= 10) && (contentType.toLowerCase(Locale.getDefault()).substring(0, 10).equals("text/plain"))) {
 				fileNameWidthExtension = MailConfig.attachmentDir + currentEmailFileName + ".txt";
 				
 				String constr = getContent(part);
@@ -683,7 +689,7 @@ public class MailReceivePop3 implements IMailReceive{
 				
 				System.out.println("print mail plain -------------------" + constr);
 			} else if ((contentType.length() >= 9) // Check if html
-					&& (contentType.toLowerCase().substring(0, 9).equals("text/html"))) {
+					&& (contentType.toLowerCase(Locale.getDefault()).substring(0, 9).equals("text/html"))) {
 				fileNameWidthExtension = MailConfig.attachmentDir + currentEmailFileName + ".html";
 				
 				String constr = getContent(part);
@@ -691,9 +697,9 @@ public class MailReceivePop3 implements IMailReceive{
 					contentStr = constr;
 				}
 			} else if ((contentType.length() >= 9) // Check if html
-					&& (contentType.toLowerCase().substring(0, 9).equals("image/gif"))) {
+					&& (contentType.toLowerCase(Locale.getDefault()).substring(0, 9).equals("image/gif"))) {
 				fileNameWidthExtension = MailConfig.attachmentDir + currentEmailFileName + ".gif";
-			} else if ((contentType.length() >= 11) && contentType.toLowerCase().substring(0, 11).equals("multipart/*")) {
+			} else if ((contentType.length() >= 11) && contentType.toLowerCase(Locale.getDefault()).substring(0, 11).equals("multipart/*")) {
 				handleMultipart((Multipart) part.getContent());
 			} else { // Unknown type
 				fileNameWidthExtension = MailConfig.attachmentDir + currentEmailFileName + ".txt";
@@ -780,6 +786,7 @@ public class MailReceivePop3 implements IMailReceive{
 		return list;
 	}
 	
+	@Override
 	public MailDTO message2MailDTO(Message message){
 		try{
 			String from = getFrom(message);
@@ -816,6 +823,8 @@ public class MailReceivePop3 implements IMailReceive{
 			bean.setSubject(subject);
 			bean.setReplySign(replySign);
 			
+			bean.setContent(contentStr);
+			
 			item.mailBean = bean;
 			item.sendDate = sentDate;
 			item.mailMessage = message;
@@ -830,6 +839,7 @@ public class MailReceivePop3 implements IMailReceive{
 		return null;
 	}
 
+	@Override
 	public void setLastLoadMailMillSeconds(long lastLoadMailMillSeconds) {
 		this.lastLoadMailMillSeconds = lastLoadMailMillSeconds;
 	}

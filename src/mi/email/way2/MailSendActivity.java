@@ -11,11 +11,9 @@ import javax.mail.Message;
 import de.greenrobot.event.EventBus;
 import mi.email.way2.api.MailConfig;
 import mi.email.way2.control.MailManager;
-import mi.email.way2.impl.MailReceivePop3;
 import mi.email.way2.model.MailBean;
 import mi.email.way2.model.MailDTO;
 import mi.learn.com.R;
-import android.app.Activity;
 import android.os.Bundle;
 import android.os.Environment;
 import android.text.TextUtils;
@@ -24,7 +22,7 @@ import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.Toast;
 
-public class MailSendActivity extends Activity implements OnClickListener{
+public class MailSendActivity extends BaseActivity implements OnClickListener{
 	EditText fromET,subjectET,contentET;
 	
 	private boolean isReply = false;
@@ -80,7 +78,7 @@ public class MailSendActivity extends Activity implements OnClickListener{
 			isReply = true;
 			curMessage = message;
 			
-			MailDTO mitem = MailReceivePop3.getInstance().message2MailDTO(message);
+			MailDTO mitem = MailManager.getInstance().message2MailDTO(message);
 			if(mitem == null){
 				finish();
 				return;

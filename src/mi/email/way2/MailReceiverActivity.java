@@ -16,7 +16,6 @@ import mi.email.way2.model.MailDTO;
 import mi.email.way2.tools.MailEvent.loadMailsEvent;
 import mi.email.way2.views.LoadDialog;
 import mi.learn.com.R;
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -26,12 +25,11 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
-import android.widget.Toast;
 
 /**
  * 邮件接收器，目前支持pop3协议。 能够接收文本、HTML和带有附件的邮件
  */
-public class MailReceiverActivity extends Activity {
+public class MailReceiverActivity extends BaseActivity {
 
 	List<MailDTO> mails = new ArrayList<MailDTO>();
 	private MailAdapter adapter;
@@ -108,7 +106,7 @@ public class MailReceiverActivity extends Activity {
 				}
 
 			} else {
-				Toast.makeText(getApplicationContext(), "邮件加载失败", Toast.LENGTH_SHORT).show();
+				showToast("邮件加载失败");
 			}
 		}
 

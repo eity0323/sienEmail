@@ -31,16 +31,20 @@ import mi.email.way2.model.MailDTO;
 import android.os.Environment;
 
 public class MailSendSmtp implements IMailSend{
-	private static MailSendSmtp instance;
 	
 	public static int SEND_PIC_INNER_MODEL = 1;
 	public static int SEND_PIC_ATTACH_MODEL = 2;
 	
-	public static MailSendSmtp getInstance(){
-		if(instance == null){
-			instance = new MailSendSmtp();
-		}
-		return instance;
+	private String mailAccount,mailPwd;
+	
+	public MailSendSmtp(){
+		this.mailAccount = MailConfig.userName;
+		this.mailPwd = MailConfig.password;
+	}
+	
+	public MailSendSmtp(String uname,String upwd){
+		this.mailAccount = uname;
+		this.mailPwd = upwd;
 	}
 	
 	@Override
@@ -80,7 +84,7 @@ public class MailSendSmtp implements IMailSend{
 			
 			if(message != null){
 				Transport tran = session.getTransport();
-				tran.connect(MailConfig.hostServiceSmtp, MailConfig.hostPortSmtp, MailConfig.userName, MailConfig.password);// 连接到新浪邮箱服务器
+				tran.connect(MailConfig.hostServiceSmtp, MailConfig.hostPortSmtp, mailAccount, mailPwd);// 连接到新浪邮箱服务器
 				tran.sendMessage(message, new Address[] { new InternetAddress(bean.getToAddress()) });// 设置邮件接收人
 				tran.close();
 			}
@@ -92,7 +96,7 @@ public class MailSendSmtp implements IMailSend{
 	
 	private void sendMailWithAttachment(MailDTO data,int sendModel){
 		try{
-			MailAuthenticator authenticator = new MailAuthenticator(MailConfig.userName, MailConfig.password);
+			MailAuthenticator authenticator = new MailAuthenticator(mailAccount, mailPwd);
 			Session session = Session.getInstance(getSmtpProperties(true),authenticator);
 			session.setDebug(true);
 			
@@ -130,7 +134,7 @@ public class MailSendSmtp implements IMailSend{
 		MailBean bean = data.mailBean;
 		try{
 			Message message = new MimeMessage(session);
-			message.setFrom(new InternetAddress(MailConfig.userName));
+			message.setFrom(new InternetAddress(mailAccount));
 			message.setSubject(bean.getSubject());
 			message.setRecipients(RecipientType.TO,InternetAddress.parse(bean.getToAddress()));//接收人
 			
@@ -157,7 +161,7 @@ public class MailSendSmtp implements IMailSend{
 		MailBean bean = data.mailBean;
 		try{
 			Message message = new MimeMessage(session);
-			message.setFrom(new InternetAddress(MailConfig.userName));
+			message.setFrom(new InternetAddress(mailAccount));
 			message.setSubject(bean.getSubject());
 			message.setRecipients(RecipientType.TO,InternetAddress.parse(bean.getToAddress()));//接收人
 			
@@ -258,14 +262,14 @@ public class MailSendSmtp implements IMailSend{
 				MailBean bean = data.mailBean;
 				
 				MimeMessage replyMessage = (MimeMessage) message.reply(false);
-				replyMessage.setFrom(new InternetAddress(MailConfig.userName));
+				replyMessage.setFrom(new InternetAddress(mailAccount));
 				replyMessage.setRecipients(MimeMessage.RecipientType.TO, address.getAddress());
 				replyMessage.setText(bean.getContent());
 				replyMessage.saveChanges();
 
 				Session session = Session.getInstance(getSmtpProperties(true));
 				Transport tran = session.getTransport();
-				tran.connect(MailConfig.hostServiceSmtp, 25, MailConfig.userName, MailConfig.password);// 连接到新浪邮箱服务器
+				tran.connect(MailConfig.hostServiceSmtp, 25, mailAccount, mailPwd);// 连接到新浪邮箱服务器
 				tran.sendMessage(replyMessage, new Address[] { new InternetAddress(address.getAddress()) });// 设置邮件接收人
 				tran.close();
 			}
@@ -286,7 +290,7 @@ public class MailSendSmtp implements IMailSend{
 			}
 			if (null != address) {
 				MimeMessage replyMessage = (MimeMessage) message.reply(false);
-				replyMessage.setFrom(new InternetAddress(MailConfig.userName));
+				replyMessage.setFrom(new InternetAddress(mailAccount));
 				replyMessage.setRecipients(MimeMessage.RecipientType.TO, address.getAddress());
 
 				MailBean bean = data.mailBean;
@@ -311,7 +315,7 @@ public class MailSendSmtp implements IMailSend{
 
 				Session session = Session.getInstance(getSmtpProperties(true));
 				Transport tran = session.getTransport();
-				tran.connect(MailConfig.hostServiceSmtp, 25, MailConfig.userName, MailConfig.password);// 连接到新浪邮箱服务器
+				tran.connect(MailConfig.hostServiceSmtp, 25, mailAccount, mailPwd);// 连接到新浪邮箱服务器
 				tran.sendMessage(replyMessage, new Address[] { new InternetAddress(address.getAddress()) });// 设置邮件接收人
 				tran.close();
 			}
