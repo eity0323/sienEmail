@@ -25,9 +25,9 @@ import android.webkit.WebView;
 import android.widget.TextView;
 
 public class MailDetailActivity extends BaseActivity implements OnClickListener{
-	private String toAddress = "";
-	String mailId = "";
-	private Message currentMessage;
+	private String toAddress = "";		//收件方地址
+	String mailId = "";	//邮件id
+	private Message currentMessage;		//当前邮件
 	
 	final String mimetype = "text/html";  
     final String encoding = "utf-8";  
@@ -35,7 +35,7 @@ public class MailDetailActivity extends BaseActivity implements OnClickListener{
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_detail_way2);
+		setContentView(R.layout.detail_mail_activity);
 		
 		Intent tent = getIntent();
 		mailId = tent.getStringExtra("ID");
@@ -65,6 +65,7 @@ public class MailDetailActivity extends BaseActivity implements OnClickListener{
 		MailManager.getInstance().loadMailDetail(mailId);
 	}
 	
+	/*获取邮件详情*/
 	public void onEventMainThread(searchMailsEvent event){
 		if(event != null){
 			int status = event.getStatus();
@@ -111,6 +112,7 @@ public class MailDetailActivity extends BaseActivity implements OnClickListener{
 		}
 	}
 	
+	/*删除邮件*/
 	public void onEventMainThread(deleteMailEvent event){
 		if(event != null){
 			int status = event.getStatus();
@@ -136,6 +138,7 @@ public class MailDetailActivity extends BaseActivity implements OnClickListener{
 		}
 	}
 	
+	/*回复邮件*/
 	private void replyMail(){
 		if(TextUtils.isEmpty(toAddress))	return;
 		
@@ -151,6 +154,7 @@ public class MailDetailActivity extends BaseActivity implements OnClickListener{
 		}
 	}
 	
+	/*回复邮件时关闭邮件详情页*/
 	public void onEventMainThread(String value){
 		if(!TextUtils.isEmpty(value) && value.equals("mailSendActivityInited")){
 			EventBus.getDefault().postSticky(currentMessage);

@@ -31,7 +31,7 @@ import android.widget.ListView;
  */
 public class MailReceiverActivity extends BaseActivity {
 
-	List<MailDTO> mails = new ArrayList<MailDTO>();
+	List<MailDTO> mails = new ArrayList<MailDTO>();//邮件列表数据源
 	private MailAdapter adapter;
 	
 	protected static final int Menu_About = Menu.FIRST;
@@ -40,7 +40,7 @@ public class MailReceiverActivity extends BaseActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.acitivity_way2);
+		setContentView(R.layout.reclist_acitivity);
 		
 		mails = MailManager.getInstance().showMailsInDB(this);
 		if(mails == null){
@@ -93,6 +93,7 @@ public class MailReceiverActivity extends BaseActivity {
 		MailManager.getInstance().loadAllMails(this);
 	}
 
+	/*加载邮件列表*/
 	public void onEventMainThread(loadMailsEvent event) {
 		if (event != null) {
 			int status = event.getStatus();
@@ -143,6 +144,7 @@ public class MailReceiverActivity extends BaseActivity {
 		return true;
 	}
 	
+	/*发送新邮件*/
 	private void go2NewMailActivity(){
 		Intent t = new Intent();
 		t.setClass(getApplicationContext(), MailSendActivity.class);

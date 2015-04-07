@@ -6,8 +6,8 @@ import java.util.HashMap;
 import javax.mail.Message;
 
 public class MailDTO {
-	public MailBean mailBean;
-	public Date sendDate;
-	public Message mailMessage;
-	public HashMap<String, String> attachmentMap;
+	public MailBean mailBean;	//邮件基本属性
+	public Date sendDate;		//发送日期
+	public Message mailMessage;	//消息体
+	public HashMap<String, String> attachmentMap;	//附件
 }

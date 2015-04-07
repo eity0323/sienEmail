@@ -44,7 +44,7 @@ public class MailAdapter extends BaseAdapter {
 		ViewHolder vholder = null;
 		if(convertView == null){
 			vholder = new ViewHolder();
-			convertView = minflater.inflate(R.layout.item, null);
+			convertView = minflater.inflate(R.layout.list_item, null);
 			
 			vholder.subjectTV = (TextView) convertView.findViewById(R.id.title);
 			vholder.contentTV = (TextView) convertView.findViewById(R.id.info);

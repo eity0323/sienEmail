@@ -74,16 +74,18 @@ public class MailReceiveImap implements IMailReceive {
 	private boolean need2SaveMail = false;
 	private boolean need2ParseMailDetail = false;
 	
-	private String mailAccount,mailPwd;
+	private String mailAccount,mailPwd,mailHost;
 	
 	public MailReceiveImap(){
 		this.mailAccount = MailConfig.userName;
 		this.mailPwd = MailConfig.password;
+		this.mailHost = MailConfig.hostServiceImap;
 	}
 	
-	public MailReceiveImap(String uname,String upwd){
+	public MailReceiveImap(String uname,String upwd,String uhost){
 		this.mailAccount = uname;
 		this.mailPwd = upwd;
+		this.mailHost = uhost;
 	}
 
 	@Override
@@ -214,7 +216,7 @@ public class MailReceiveImap implements IMailReceive {
 	private Properties getPopProperties() {
 		Properties p = new Properties();
 		p.put("mail.store.protocol", MailConfig.hostProtocolImap);
-		p.put("mail.imap.host", MailConfig.hostServicePop3);
+		p.put("mail.imap.host", mailHost);
 		p.put("mail.imap.port", MailConfig.hostPortImap);
 		return p;
 	}

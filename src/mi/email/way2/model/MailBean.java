@@ -7,15 +7,15 @@ package mi.email.way2.model;
 public class MailBean {
 
 	private Long id;
-    private String messageId;
-    private String subject;
-    private String from;
-    private String content;
-    private String toAddress;
-    private String ccAddress;
-    private String bccAddress;
-    private Boolean replySign;
-    private Boolean containAttach;
+    private String messageId;	//邮件id
+    private String subject;		//发送方
+    private String from;		//来源
+    private String content;		//内容
+    private String toAddress;	//接收方
+    private String ccAddress;	//抄送
+    private String bccAddress;	//加密抄送
+    private Boolean replySign;	//回执
+    private Boolean containAttach;	//包含附件
 
     public MailBean() {
     }

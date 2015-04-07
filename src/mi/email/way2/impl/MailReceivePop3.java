@@ -73,16 +73,18 @@ public class MailReceivePop3 implements IMailReceive{
 	
 	private String contentStr = "";
 	
-	private String mailAccount,mailPwd;
+	private String mailAccount,mailPwd,mailHost;
 	
 	public MailReceivePop3(){
 		this.mailAccount = MailConfig.userName;
 		this.mailPwd = MailConfig.password;
+		this.mailHost = MailConfig.hostServicePop3;
 	}
 	
-	public MailReceivePop3(String uname,String upwd){
+	public MailReceivePop3(String uname,String upwd,String uhost){
 		this.mailAccount = uname;
 		this.mailPwd = upwd;
+		this.mailHost = uhost;
 	}
 	
 	@Override
@@ -112,8 +114,6 @@ public class MailReceivePop3 implements IMailReceive{
 		this.messageId = messageId;
 		connectToServer(OPEN_MODEL_DELETE);
 	}
-	
-	
 	
 	private void readLocalEmlFile(String fileName,String messageId){
 		try {
@@ -207,7 +207,7 @@ public class MailReceivePop3 implements IMailReceive{
 	
 	private Properties getPopProperties() {
 		Properties p = new Properties();
-		p.put("mail.pop3.host", MailConfig.hostServicePop3);
+		p.put("mail.pop3.host", mailHost);
 		p.put("mail.pop3.port", MailConfig.hostPortPop3);
 		return p;
 	}

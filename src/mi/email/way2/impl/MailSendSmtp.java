@@ -35,16 +35,18 @@ public class MailSendSmtp implements IMailSend{
 	public static int SEND_PIC_INNER_MODEL = 1;
 	public static int SEND_PIC_ATTACH_MODEL = 2;
 	
-	private String mailAccount,mailPwd;
+	private String mailAccount,mailPwd,mailHost;
 	
 	public MailSendSmtp(){
 		this.mailAccount = MailConfig.userName;
 		this.mailPwd = MailConfig.password;
+		this.mailHost = MailConfig.hostServiceSmtp;
 	}
 	
-	public MailSendSmtp(String uname,String upwd){
+	public MailSendSmtp(String uname,String upwd,String uhost){
 		this.mailAccount = uname;
 		this.mailPwd = upwd;
+		this.mailHost = uhost;
 	}
 	
 	@Override
@@ -66,7 +68,7 @@ public class MailSendSmtp implements IMailSend{
 	
 	private Properties getSmtpProperties(boolean needAuth) {
 		Properties p = new Properties();
-		p.put("mail.smtp.host", MailConfig.hostServiceSmtp);
+		p.put("mail.smtp.host", mailHost);
 		p.put("mail.smtp.port",MailConfig.hostPortSmtp);
 		p.put("mail.transport.protocol", MailConfig.hostProtocolSmtp);
 		
@@ -84,7 +86,7 @@ public class MailSendSmtp implements IMailSend{
 			
 			if(message != null){
 				Transport tran = session.getTransport();
-				tran.connect(MailConfig.hostServiceSmtp, MailConfig.hostPortSmtp, mailAccount, mailPwd);// 连接到新浪邮箱服务器
+				tran.connect(mailHost, MailConfig.hostPortSmtp, mailAccount, mailPwd);// 连接到新浪邮箱服务器
 				tran.sendMessage(message, new Address[] { new InternetAddress(bean.getToAddress()) });// 设置邮件接收人
 				tran.close();
 			}
@@ -269,7 +271,7 @@ public class MailSendSmtp implements IMailSend{
 
 				Session session = Session.getInstance(getSmtpProperties(true));
 				Transport tran = session.getTransport();
-				tran.connect(MailConfig.hostServiceSmtp, 25, mailAccount, mailPwd);// 连接到新浪邮箱服务器
+				tran.connect(mailHost, 25, mailAccount, mailPwd);// 连接到新浪邮箱服务器
 				tran.sendMessage(replyMessage, new Address[] { new InternetAddress(address.getAddress()) });// 设置邮件接收人
 				tran.close();
 			}
@@ -315,7 +317,7 @@ public class MailSendSmtp implements IMailSend{
 
 				Session session = Session.getInstance(getSmtpProperties(true));
 				Transport tran = session.getTransport();
-				tran.connect(MailConfig.hostServiceSmtp, 25, mailAccount, mailPwd);// 连接到新浪邮箱服务器
+				tran.connect(mailHost, 25, mailAccount, mailPwd);// 连接到新浪邮箱服务器
 				tran.sendMessage(replyMessage, new Address[] { new InternetAddress(address.getAddress()) });// 设置邮件接收人
 				tran.close();
 			}

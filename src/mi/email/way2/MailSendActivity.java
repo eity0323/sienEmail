@@ -25,14 +25,14 @@ import android.widget.Toast;
 public class MailSendActivity extends BaseActivity implements OnClickListener{
 	EditText fromET,subjectET,contentET;
 	
-	private boolean isReply = false;
-	private Message curMessage = null;
+	private boolean isReply = false;		//是否为邮件回复
+	private Message curMessage = null;		//当前邮件
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		setContentView(R.layout.activity_send_way2);
+		setContentView(R.layout.send_activity);
 		
 		EventBus.getDefault().register(this);
 		
@@ -72,6 +72,7 @@ public class MailSendActivity extends BaseActivity implements OnClickListener{
 		}
 	}
 	
+	/*若为邮件回复，则接收当前邮件*/
 	public void onEventMainThread(Message message){
 		if(message != null){
 			
