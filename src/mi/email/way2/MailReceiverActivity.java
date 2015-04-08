@@ -97,7 +97,6 @@ public class MailReceiverActivity extends BaseActivity {
 	public void onEventMainThread(loadMailsEvent event) {
 		if (event != null) {
 			int status = event.getStatus();
-
 			if (status == loadMailsEvent.STATUS_SUCCESS) {
 
 				List<MailDTO> _mails = event.getDatas();

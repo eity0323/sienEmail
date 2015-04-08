@@ -163,7 +163,7 @@ public class MailSendActivity extends BaseActivity implements OnClickListener{
 		map.put("file1", filepath);
 		map.put("pic1", picpath);
 		
-		data.attachmentMap = map;
+//		data.attachmentMap = map;
 		data.mailBean = bean;
 		
 		send(data);

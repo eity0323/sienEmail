@@ -10,12 +10,12 @@ import java.util.List;
 import javax.mail.Message;
 
 import mi.email.way2.api.IMailManager;
-import mi.email.way2.api.IMailReceive;
-import mi.email.way2.api.IMailSend;
+import mi.email.way2.api.IMailReceiver;
+import mi.email.way2.api.IMailSender;
 import mi.email.way2.db.DBManager;
 import mi.email.way2.db.MailBeanDao;
-import mi.email.way2.impl.MailReceiveImap;
-import mi.email.way2.impl.MailSendSmtp;
+import mi.email.way2.impl.MailReceiver;
+import mi.email.way2.impl.MailSender;
 import mi.email.way2.model.MailBean;
 import mi.email.way2.model.MailDTO;
 import android.content.Context;
@@ -25,8 +25,8 @@ import de.greenrobot.dao.query.QueryBuilder;
 public class MailManager implements IMailManager{
 	private static MailManager instance;
 	
-	private IMailSend sendInstance; 
-	private IMailReceive receiveInstance;
+	private IMailSender sendInstance; 
+	private IMailReceiver receiveInstance;
 
 	private List<MailDTO> mailBeans;
 	private Context mcontext;
@@ -72,17 +72,17 @@ public class MailManager implements IMailManager{
 		return mitem;
 	}
 	
-	private IMailSend getSendInstance(){
+	private IMailSender getSendInstance(){
 		if(sendInstance == null){
-			sendInstance = new MailSendSmtp();
+			sendInstance = new MailSender();
 		}
 		
 		return sendInstance;
 	}
 	
-	private IMailReceive getReceiveInstance(){
+	private IMailReceiver getReceiveInstance(){
 		if(receiveInstance == null){
-			receiveInstance = new MailReceiveImap();
+			receiveInstance = new MailReceiver();
 		}
 		
 		return receiveInstance;
