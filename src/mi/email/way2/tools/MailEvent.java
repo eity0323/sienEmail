@@ -99,13 +99,13 @@ public class MailEvent {
 	}
 	
 	/*回复邮件*/
-	public static class replyMailEvent{
+	public static class sendMailEvent{
 		int status;
 		String items;
 		public static int STATUS_SUCCESS = 0;
     	public static int STATUS_FAILED = 1;
   
-    	public replyMailEvent(int status,String items)
+    	public sendMailEvent(int status,String items)
     	{
     		this.items = items;
     		this.status = status;

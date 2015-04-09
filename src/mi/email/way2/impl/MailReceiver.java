@@ -73,23 +73,15 @@ public class MailReceiver implements IMailReceiver{
 	private boolean need2SaveMail = false;
 	private boolean need2ParseMailDetail = false;
 	
-	private String mailAccount,mailPwd,mailHost;
-	
-	public MailReceiver(){
-		this.mailAccount = MailConfig.userName;
-		this.mailPwd = MailConfig.password;
-		this.mailHost = MailConfig.hostServiceImap;
-	}
-	
-	public MailReceiver(String uname,String upwd,String uhost){
-		this.mailAccount = uname;
-		this.mailPwd = upwd;
-		this.mailHost = uhost;
+	public MailReceiver(IMailBox mailbox){
+		this.mailboxInstance = mailbox;
+		
+		mailboxInstance.setMailListener(mailListener);
 	}
 	
 	@Override
 	public void loadMails() {
-		getMailBoxInstance().connectToServer(OPEN_MODEL_LIST);
+		mailboxInstance.connectToServer(OPEN_MODEL_LIST);
 	}
 
 	@Override
@@ -113,7 +105,7 @@ public class MailReceiver implements IMailReceiver{
 	@Override
 	public void deleteMailByMessageId(String messageId) {
 		this.messageId = messageId;
-		getMailBoxInstance().connectToServer(OPEN_MODEL_DELETE);
+		mailboxInstance.connectToServer(OPEN_MODEL_DELETE);
 	}
 
 	@Override
@@ -175,15 +167,6 @@ public class MailReceiver implements IMailReceiver{
 		return null;
 	}
 	
-	private IMailBox getMailBoxInstance(){
-		if(mailboxInstance == null){
-			mailboxInstance = new MailReceiveImap(mailAccount,mailPwd,mailHost);
-			
-			mailboxInstance.setMailListener(mailListener);
-		}
-		return mailboxInstance;
-	}
-	
 	private MailReceiveListener mailListener = new MailReceiveListener() {
 		
 		@Override
@@ -235,7 +218,7 @@ public class MailReceiver implements IMailReceiver{
 		need2ParseMailDetail = true;
 		need2SaveMail = true;
 		
-		getMailBoxInstance().connectToServer(OPEN_MODEL_DETAIL);
+		mailboxInstance.connectToServer(OPEN_MODEL_DETAIL);
 	}
 	
 	private void loadMailFromMailBox(Store store, int openModel){
@@ -276,7 +259,7 @@ public class MailReceiver implements IMailReceiver{
 		
 		EventBus.getDefault().post(new MailEvent.deleteMailEvent(deleteMailEvent.STATUS_SUCCESS, "删除"));
 		
-		getMailBoxInstance().closeConnection(store);
+		mailboxInstance.closeConnection(store);
 	}
 	
 	private void getMailByMessageId(String messageId){
@@ -305,7 +288,7 @@ public class MailReceiver implements IMailReceiver{
 			saveAndParseDetailMessage(currentMail);
 		}
 		EventBus.getDefault().post(new MailEvent.searchMailsEvent(searchMailsEvent.STATUS_SUCCESS, messages2MailBeans(mails)));
-		getMailBoxInstance().closeConnection(store);
+		mailboxInstance.closeConnection(store);
 	}
 	
 	private void getAllOrLastestMailList(Store store) {
@@ -321,7 +304,7 @@ public class MailReceiver implements IMailReceiver{
 			
 			EventBus.getDefault().post(new MailEvent.loadMailsEvent(loadMailsEvent.STATUS_SUCCESS, mailBeans));
 		}
-		getMailBoxInstance().closeConnection(store);
+		mailboxInstance.closeConnection(store);
 	}
 	
 	private void deleteMails(Store store){
@@ -719,7 +702,7 @@ public class MailReceiver implements IMailReceiver{
 		InputStreamReader sbis = new InputStreamReader(part.getInputStream());
 		// 没有附件的情况
 		if (disposition == null) {
-			if ((contentType.length() >= 10) && (contentType.toLowerCase().substring(0, 10).equals("text/plain"))) {
+			if ((contentType.length() >= 10) && (contentType.toLowerCase(Locale.getDefault()).substring(0, 10).equals("text/plain"))) {
 				fileNameWidthExtension = MailConfig.attachmentDir + currentEmailFileName + ".txt";
 				
 				String constr = getContent(part);

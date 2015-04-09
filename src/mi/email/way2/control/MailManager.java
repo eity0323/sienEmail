@@ -14,7 +14,9 @@ import mi.email.way2.api.IMailReceiver;
 import mi.email.way2.api.IMailSender;
 import mi.email.way2.db.DBManager;
 import mi.email.way2.db.MailBeanDao;
+import mi.email.way2.impl.MailReceiveImap;
 import mi.email.way2.impl.MailReceiver;
+import mi.email.way2.impl.MailSendSmtp;
 import mi.email.way2.impl.MailSender;
 import mi.email.way2.model.MailBean;
 import mi.email.way2.model.MailDTO;
@@ -74,7 +76,7 @@ public class MailManager implements IMailManager{
 	
 	private IMailSender getSendInstance(){
 		if(sendInstance == null){
-			sendInstance = new MailSender();
+			sendInstance = new MailSender( new MailSendSmtp() );
 		}
 		
 		return sendInstance;
@@ -82,7 +84,7 @@ public class MailManager implements IMailManager{
 	
 	private IMailReceiver getReceiveInstance(){
 		if(receiveInstance == null){
-			receiveInstance = new MailReceiver();
+			receiveInstance = new MailReceiver( new MailReceiveImap() );
 		}
 		
 		return receiveInstance;

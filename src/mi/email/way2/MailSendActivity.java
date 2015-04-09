@@ -13,6 +13,7 @@ import mi.email.way2.api.MailConfig;
 import mi.email.way2.control.MailManager;
 import mi.email.way2.model.MailBean;
 import mi.email.way2.model.MailDTO;
+import mi.email.way2.tools.MailEvent.sendMailEvent;
 import mi.learn.com.R;
 import android.os.Bundle;
 import android.os.Environment;
@@ -72,6 +73,18 @@ public class MailSendActivity extends BaseActivity implements OnClickListener{
 		}
 	}
 	
+	public void onEventMainThread(sendMailEvent event){
+		if(event != null){
+			int status = event.getStatus();
+			String err = event.getDatas();
+			if(status == sendMailEvent.STATUS_SUCCESS){
+				cancel();
+			}else{
+				showToast(err);
+			}
+		}
+	}
+	
 	/*若为邮件回复，则接收当前邮件*/
 	public void onEventMainThread(Message message){
 		if(message != null){
@@ -125,7 +138,6 @@ public class MailSendActivity extends BaseActivity implements OnClickListener{
 			data.mailMessage = curMessage;
 			MailManager.getInstance().replyMail(data);
 			
-			cancel();
 		}
 	}
 	
@@ -167,8 +179,6 @@ public class MailSendActivity extends BaseActivity implements OnClickListener{
 		data.mailBean = bean;
 		
 		send(data);
-		
-		cancel();
 	}
 	
 	private void send(MailDTO data){

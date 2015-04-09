@@ -22,11 +22,13 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import de.greenrobot.event.EventBus;
 import mi.email.way2.api.IMailSend;
 import mi.email.way2.api.IMailSender;
-import mi.email.way2.api.MailConfig;
 import mi.email.way2.model.MailBean;
 import mi.email.way2.model.MailDTO;
+import mi.email.way2.tools.MailEvent;
+import mi.email.way2.tools.MailEvent.sendMailEvent;
 import mi.email.way2.tools.MailSendListener;
 import android.os.Environment;
 
@@ -37,23 +39,14 @@ public class MailSender implements IMailSender{
 	public static int SEND_PIC_INNER_MODEL = 1;
 	public static int SEND_PIC_ATTACH_MODEL = 2;
 	
-	private String mailAccount,mailPwd,mailHost;
-	
-	public MailSender(){
-		this.mailAccount = MailConfig.userName;
-		this.mailPwd = MailConfig.password;
-		this.mailHost = MailConfig.hostServiceSmtp;
-	}
-	
-	public MailSender(String uname,String upwd,String uhost){
-		this.mailAccount = uname;
-		this.mailPwd = upwd;
-		this.mailHost = uhost;
+	public MailSender(IMailSend sendbox){
+		this.sendInstance = sendbox;
+		sendInstance.setMailListener(mailsendListener);
 	}
 	
 	@Override
 	public void sendMail(MailDTO data) {
-		session = getMailSendInstance().getMailSession();
+		session = sendInstance.getMailSession();
 		
 		if(data.attachmentMap != null){
 			sendMailWithAttachment(data, SEND_PIC_ATTACH_MODEL);
@@ -70,25 +63,16 @@ public class MailSender implements IMailSender{
 		}
 	}
 	
-	private IMailSend getMailSendInstance(){
-		if(sendInstance == null){
-			sendInstance = new MailSendSmtp(mailAccount,mailPwd,mailHost);
-			sendInstance.setMailListener(mailsendListener);
-		}
-		
-		return sendInstance;
-	}
-	
 	private MailSendListener mailsendListener = new MailSendListener() {
 		
 		@Override
 		public void onSuccess() {
-
+			EventBus.getDefault().post(new MailEvent.sendMailEvent(sendMailEvent.STATUS_SUCCESS, "消息发送成功"));
 		}
 		
 		@Override
 		public void onFail() {
-			
+			connectMailFailed("消息发送失败");
 		}
 	};
 	
@@ -103,7 +87,7 @@ public class MailSender implements IMailSender{
 			Message message = mailBean2Message(session,bean);
 			
 			if(message != null){
-				getMailSendInstance().sendMessage(message, bean.getToAddress());
+				sendInstance.sendMessage(message, bean.getToAddress());
 			}
 			
 		} catch (Exception ex) {
@@ -113,7 +97,7 @@ public class MailSender implements IMailSender{
 	}
 	
 	private void connectMailFailed(String msg) {
-		
+		EventBus.getDefault().post(new MailEvent.sendMailEvent(sendMailEvent.STATUS_FAILED, msg));
 	}
 	
 	private void sendMailWithAttachment(MailDTO data,int sendModel){
@@ -125,7 +109,7 @@ public class MailSender implements IMailSender{
 				message = mailBean2MessageWithInnerAttach(session, data);
 			
 			if(message != null){
-				getMailSendInstance().send(message);
+				sendInstance.send(message);
 			}
 				Transport.send(message);
 			
@@ -154,7 +138,7 @@ public class MailSender implements IMailSender{
 		MailBean bean = data.mailBean;
 		try{
 			Message message = new MimeMessage(session);
-			message.setFrom(new InternetAddress(mailAccount));
+			message.setFrom(new InternetAddress(bean.getFrom()));
 			message.setSubject(bean.getSubject());
 			message.setRecipients(RecipientType.TO,InternetAddress.parse(bean.getToAddress()));//接收人
 			
@@ -181,7 +165,7 @@ public class MailSender implements IMailSender{
 		MailBean bean = data.mailBean;
 		try{
 			Message message = new MimeMessage(session);
-			message.setFrom(new InternetAddress(mailAccount));
+			message.setFrom(new InternetAddress(bean.getFrom()));
 			message.setSubject(bean.getSubject());
 			message.setRecipients(RecipientType.TO,InternetAddress.parse(bean.getToAddress()));//接收人
 			
@@ -282,12 +266,12 @@ public class MailSender implements IMailSender{
 				MailBean bean = data.mailBean;
 				
 				MimeMessage replyMessage = (MimeMessage) message.reply(false);
-				replyMessage.setFrom(new InternetAddress(mailAccount));
+				replyMessage.setFrom(new InternetAddress(bean.getFrom()));
 				replyMessage.setRecipients(MimeMessage.RecipientType.TO, address.getAddress());
 				replyMessage.setText(bean.getContent());
 				replyMessage.saveChanges();
 
-				getMailSendInstance().sendMessage(replyMessage, address.getAddress());
+				sendInstance.sendMessage(replyMessage, address.getAddress());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -304,12 +288,14 @@ public class MailSender implements IMailSender{
 			if (address != null) {
 				System.out.println(address.getPersonal());
 			}
+			
 			if (null != address) {
+				MailBean bean = data.mailBean;
+				
 				MimeMessage replyMessage = (MimeMessage) message.reply(false);
-				replyMessage.setFrom(new InternetAddress(mailAccount));
+				replyMessage.setFrom(new InternetAddress(bean.getFrom()));
 				replyMessage.setRecipients(MimeMessage.RecipientType.TO, address.getAddress());
 
-				MailBean bean = data.mailBean;
 				HashMap<String, String> _map = data.attachmentMap;
 				String key,value;
 				MimeMultipart mimeMuti = new MimeMultipart("mixed");
@@ -329,7 +315,7 @@ public class MailSender implements IMailSender{
 
 				replyMessage.saveChanges();
 
-				getMailSendInstance().sendMessage(replyMessage, address.getAddress());
+				sendInstance.sendMessage(replyMessage, address.getAddress());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
