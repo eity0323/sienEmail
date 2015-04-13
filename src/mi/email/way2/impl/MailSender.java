@@ -30,7 +30,6 @@ import mi.email.way2.model.MailDTO;
 import mi.email.way2.tools.MailEvent;
 import mi.email.way2.tools.MailEvent.sendMailEvent;
 import mi.email.way2.tools.MailSendListener;
-import android.os.Environment;
 
 public class MailSender implements IMailSender{
 	private IMailSend sendInstance;
@@ -142,13 +141,22 @@ public class MailSender implements IMailSender{
 			message.setSubject(bean.getSubject());
 			message.setRecipients(RecipientType.TO,InternetAddress.parse(bean.getToAddress()));//接收人
 			
-			String filepath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/log_raiyi.txt";
-			String picpath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/aa.jpg";
-			MimeBodyPart bodyPartAttch = createAttachMent(filepath);//附件
-			MimeBodyPart bodyPartContentAndPic = createContentAndAttachPic(bean.getContent(),picpath);//文本内容
+			HashMap<String, String> _map = data.attachmentMap;
+			String key,value;
 			MimeMultipart mimeMuti = new MimeMultipart("mixed");
-			mimeMuti.addBodyPart(bodyPartAttch);
-			mimeMuti.addBodyPart(bodyPartContentAndPic);
+			for (Entry<String, String> entry:_map.entrySet()) {
+				key = entry.getKey();
+				value = entry.getValue();
+				
+				if(key.contains("file")){
+					MimeBodyPart bodyPartAttch = createAttachMent(value);// 附件
+					mimeMuti.addBodyPart(bodyPartAttch);
+				}else if(key.contains("pic")){
+					MimeBodyPart bodyPartContentAndPic = createContentAndAttachPic(bean.getContent(), value);
+					mimeMuti.addBodyPart(bodyPartContentAndPic);
+				}
+			}
+			
 			message.setContent(mimeMuti);
 			
 			message.saveChanges();
@@ -169,14 +177,22 @@ public class MailSender implements IMailSender{
 			message.setSubject(bean.getSubject());
 			message.setRecipients(RecipientType.TO,InternetAddress.parse(bean.getToAddress()));//接收人
 			
-			String filepath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/log_raiyi.txt";
-			String picpath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/aa.jpg";
-			MimeBodyPart bodyPartAttch = createAttachMent(filepath);//附件
-			MimeBodyPart bodyPartContentAndPic = createContentAndInnerPic(bean.getContent(),picpath);
-			
+			HashMap<String, String> _map = data.attachmentMap;
+			String key,value;
 			MimeMultipart mimeMuti = new MimeMultipart("mixed");
-			mimeMuti.addBodyPart(bodyPartAttch);
-			mimeMuti.addBodyPart(bodyPartContentAndPic);
+			for (Entry<String, String> entry:_map.entrySet()) {
+				key = entry.getKey();
+				value = entry.getValue();
+				
+				if(key.contains("file")){
+					MimeBodyPart bodyPartAttch = createAttachMent(value);// 附件
+					mimeMuti.addBodyPart(bodyPartAttch);
+				}else if(key.contains("pic")){
+					MimeBodyPart bodyPartContentAndPic = createContentAndAttachPic(bean.getContent(), value);
+					mimeMuti.addBodyPart(bodyPartContentAndPic);
+				}
+			}
+			
 			message.setContent(mimeMuti);
 			
 			message.saveChanges();
