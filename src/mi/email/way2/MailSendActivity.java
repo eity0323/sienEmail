@@ -8,6 +8,11 @@ import java.util.HashMap;
 
 import javax.mail.Message;
 
+import com.googlecode.androidannotations.annotations.AfterViews;
+import com.googlecode.androidannotations.annotations.Click;
+import com.googlecode.androidannotations.annotations.EActivity;
+import com.googlecode.androidannotations.annotations.ViewById;
+
 import de.greenrobot.event.EventBus;
 import mi.email.way2.api.MailConfig;
 import mi.email.way2.control.MailManager;
@@ -15,31 +20,28 @@ import mi.email.way2.model.MailBean;
 import mi.email.way2.model.MailDTO;
 import mi.email.way2.tools.MailEvent.sendMailEvent;
 import mi.learn.com.R;
-import android.os.Bundle;
 import android.os.Environment;
 import android.text.TextUtils;
-import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.Toast;
 
-public class MailSendActivity extends BaseActivity implements OnClickListener{
-	EditText fromET,subjectET,contentET;
+@EActivity(R.layout.send_activity)
+public class MailSendActivity extends BaseActivity{
+	@ViewById(R.id.send_from)
+	EditText fromET;
+	@ViewById(R.id.send_subject)
+	EditText subjectET;
+	@ViewById(R.id.send_content)
+	EditText contentET;
 	
 	private boolean isReply = false;		//是否为邮件回复
 	private Message curMessage = null;		//当前邮件
 	
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		
-		setContentView(R.layout.send_activity);
-		
+	@AfterViews
+	void initRes(){
 		EventBus.getDefault().register(this);
 		
 		isReply = false;
-		
-		initLayout();
 		
 		EventBus.getDefault().post("mailSendActivityInited");
 	}
@@ -48,29 +50,6 @@ public class MailSendActivity extends BaseActivity implements OnClickListener{
 	protected void onDestroy() {
 		super.onDestroy();
 		EventBus.getDefault().unregister(this);
-	}
-	
-	private void initLayout(){
-		fromET = (EditText)findViewById(R.id.send_from);
-		subjectET = (EditText)findViewById(R.id.send_subject);
-		contentET = (EditText)findViewById(R.id.send_content);
-		
-		findViewById(R.id.send_btn).setOnClickListener(this);
-		findViewById(R.id.cancel_btn).setOnClickListener(this);
-	}
-
-	@Override
-	public void onClick(View v) {
-		switch(v.getId()){
-		case R.id.send_btn:
-			sendOrReply();
-			break;
-		case R.id.cancel_btn:
-			cancel();
-			break;
-			default:
-				break;
-		}
 	}
 	
 	public void onEventMainThread(sendMailEvent event){
@@ -114,12 +93,18 @@ public class MailSendActivity extends BaseActivity implements OnClickListener{
 		}
 	}
 	
-	private void sendOrReply(){
+	@Click(R.id.send_btn)
+	void sendOrReply(){
 		if(isReply){
 			checkAndReply();
 		}else{
 			checkAndSend();
 		}
+	}
+	
+	@Click(R.id.cancel_btn)
+	void cancel(){
+		finish();
 	}
 	
 	private void checkAndReply(){
@@ -184,9 +169,4 @@ public class MailSendActivity extends BaseActivity implements OnClickListener{
 	private void send(MailDTO data){
 		MailManager.getInstance().sendMail(data);
 	}
-	
-	private void cancel(){
-		finish();
-	}
-	
 }
