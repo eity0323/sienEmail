@@ -12,6 +12,7 @@ import javax.mail.Message;
 import com.googlecode.androidannotations.annotations.AfterViews;
 import com.googlecode.androidannotations.annotations.Click;
 import com.googlecode.androidannotations.annotations.EActivity;
+import com.googlecode.androidannotations.annotations.Extra;
 import com.googlecode.androidannotations.annotations.ViewById;
 
 import de.greenrobot.event.EventBus;
@@ -21,7 +22,6 @@ import mi.email.way2.model.MailDTO;
 import mi.email.way2.tools.MailEvent.deleteMailEvent;
 import mi.email.way2.tools.MailEvent.searchMailsEvent;
 import mi.learn.com.R;
-import android.content.Intent;
 import android.text.TextUtils;
 import android.webkit.WebView;
 import android.widget.TextView;
@@ -37,8 +37,10 @@ public class MailDetailActivity extends BaseActivity{
 	@ViewById(R.id.content_mail)
 	WebView contentWV;
 	
-	private String toAddress = "";		//收件方地址
+	@Extra
 	String mailId = "";	//邮件id
+	
+	private String toAddress = "";		//收件方地址
 	private Message currentMessage;		//当前邮件
 	
 	final String mimetype = "text/html";  
@@ -46,9 +48,6 @@ public class MailDetailActivity extends BaseActivity{
 	
 	@AfterViews
 	void initRes(){
-		Intent tent = getIntent();
-		mailId = tent.getStringExtra("ID");
-		
 		if(TextUtils.isEmpty(mailId)){
 			finish();
 		}
@@ -132,10 +131,7 @@ public class MailDetailActivity extends BaseActivity{
 	void replyMail(){
 		if(TextUtils.isEmpty(toAddress))	return;
 		
-		Intent t = new Intent();
-		t.setClass(getApplicationContext(), MailSendActivity.class);
-		t.putExtra("model", "reply");
-		startActivity(t);
+		MailSendActivity_.intent(this).start();
 	}
 	
 	@Click(R.id.del_mail)

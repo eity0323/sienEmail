@@ -23,7 +23,6 @@ import mi.email.way2.model.MailDTO;
 import mi.email.way2.tools.MailEvent.loadMailsEvent;
 import mi.email.way2.views.LoadDialog;
 import mi.learn.com.R;
-import android.content.Intent;
 import android.text.TextUtils;
 import android.widget.ListView;
 
@@ -74,10 +73,7 @@ public class MailReceiverActivity extends BaseActivity {
 			String messageId = clickItem.mailBean.getMessageId();
 			
 			if(!TextUtils.isEmpty(messageId)){
-				Intent intent = new Intent();
-				intent.putExtra("ID", messageId);
-				intent.setClass(MailReceiverActivity.this, MailDetailActivity_.class);
-				startActivity(intent);
+				MailDetailActivity_.intent(MailReceiverActivity.this).mailId(messageId).start();
 			}
 		}
 	}
@@ -122,9 +118,7 @@ public class MailReceiverActivity extends BaseActivity {
 	/*发送新邮件*/
 	@OptionsItem(R.id.menuNew)
 	void go2NewMailActivity(){
-		Intent t = new Intent();
-		t.setClass(getApplicationContext(), MailSendActivity.class);
-		startActivity(t);
+		MailSendActivity_.intent(this).start();
 	}
 	
 	@OptionsItem(R.id.menuExit)
