@@ -10,6 +10,7 @@ import java.util.List;
 import javax.mail.MessagingException;
 
 import com.googlecode.androidannotations.annotations.AfterViews;
+import com.googlecode.androidannotations.annotations.Bean;
 import com.googlecode.androidannotations.annotations.EActivity;
 import com.googlecode.androidannotations.annotations.ItemClick;
 import com.googlecode.androidannotations.annotations.OptionsItem;
@@ -17,7 +18,7 @@ import com.googlecode.androidannotations.annotations.OptionsMenu;
 import com.googlecode.androidannotations.annotations.ViewById;
 
 import de.greenrobot.event.EventBus;
-import mi.email.way2.adapter.MailAdapter;
+import mi.email.way2.adapter.MailListAdapter;
 import mi.email.way2.control.MailManager;
 import mi.email.way2.model.MailDTO;
 import mi.email.way2.tools.MailEvent.loadMailsEvent;
@@ -36,18 +37,13 @@ public class MailReceiverActivity extends BaseActivity {
 	@ViewById(R.id.mailist)
 	ListView mailList;
 	
-	private MailAdapter adapter;
+	@Bean
+	MailListAdapter adapter;
 	
 	List<MailDTO> mails = new ArrayList<MailDTO>();//邮件列表数据源
 
 	@AfterViews
 	void initRes(){
-		mails = MailManager.getInstance().showMailsInDB(this);
-		if(mails == null){
-			mails = new ArrayList<MailDTO>();
-		}
-
-		adapter = new MailAdapter(getApplicationContext(), mails);
 		mailList.setAdapter(adapter);
 
 		EventBus.getDefault().register(this);
